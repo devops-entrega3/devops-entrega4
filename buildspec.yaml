@@ -3,16 +3,41 @@ version: 0.2
 phases:
   pre_build:
     commands:
-      - echo "In the pre_build phase..."
+      - echo Logging in to Amazon ECR...
+      - aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 632489960146.dkr.ecr.us-east-1.amazonaws.com
+      - echo Installing dependencies...
       - pip install -r requirements.txt
+      - echo Running unit tests...
+      - python -m unittest discover tests -v
+
   build:
     commands:
-      - echo "Running tests..."
-      - python -m unittest discover tests
+      - echo Build started on `date`
+      - echo Building Docker image...
+      - docker build -t deploy-not-found-entrega3 .
+      - docker tag deploy-not-found-entrega3:latest 632489960146.dkr.ecr.us-east-1.amazonaws.com/deploy-not-found-entrega3:latest 
+
   post_build:
     commands:
-      - echo "Build completed on `date`"
+      - echo Build completed on `date`
+      - echo "Pushing the Docker image..."
+      - docker push 632489960146.dkr.ecr.us-east-1.amazonaws.com/deploy-not-found-entrega3:latest
+      - echo "Writing Image Definitions file..."
+      - printf '[{"name":"app","imageUri":"632489960146.dkr.ecr.us-east-1.amazonaws.com/deploy-not-found-entrega3:latest"}]' > imagedefinitions.json
+      - printf '{"ImageURI":"632489960146.dkr.ecr.us-east-1.amazonaws.com/deploy-not-found-entrega3:latest"}' > imageDetail.json
+      - cat imagedefinitions.json
+
 artifacts:
-  files:
-    - "**/*"
-  name: devops-entrega3-$(date +%Y-%m-%d)
+  files: 
+    - 'image*.json'
+    - 'appspec.json'
+    - 'taskdef.json'
+  secondary-artifacts:
+    DefinitionArtifact:
+      files:
+        - appspec.json
+        - taskdef.json
+    ImageArtifact:
+      files:
+        - imageDetail.json
+  discard-paths: yes

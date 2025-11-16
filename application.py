@@ -17,4 +17,4 @@ def handle_exception(err):
 
 if __name__ == "__main__":
     Base.metadata.create_all(engine)
-    application.run(port=5000, debug=True)
+    application.run(host="0.0.0.0", port=5000, debug=True)
